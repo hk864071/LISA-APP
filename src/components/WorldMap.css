@@ -1,0 +1,346 @@
+.world-map-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* Use a high-quality fantasy map background */
+    background: url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=3384&auto=format&fit=crop') no-repeat center center/cover;
+    z-index: 200;
+    /* Ensure it's above everything */
+    display: flex;
+    flex-direction: column;
+    animation: fadeInMap 0.5s ease-out;
+}
+
+@keyframes fadeInMap {
+    from {
+        opacity: 0;
+        transform: scale(1.05);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.world-map-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at center, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.8));
+    backdrop-filter: blur(2px);
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* Header */
+.rpg-header {
+    padding: 1rem 2rem;
+    z-index: 10;
+    text-align: center;
+    /* Center the title */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.rpg-header .wuxia-btn-back {
+    position: absolute;
+    left: 2rem;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.map-scroll-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4rem 2rem;
+    display: flex;
+    justify-content: center;
+    perspective: 1000px;
+    /* For 3D effects */
+    /* Hide scrollbar */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.map-scroll-container::-webkit-scrollbar {
+    display: none;
+}
+
+.map-track {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    padding-bottom: 6rem;
+    /* Space at bottom */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8rem;
+    /* Increased gap for better spacing */
+}
+
+/* Animated Path Line */
+.map-line {
+    position: absolute;
+    top: 50px;
+    /* Start below the first node's top */
+    bottom: 50px;
+    left: 50%;
+    width: 6px;
+    background: linear-gradient(to bottom,
+            transparent 0%,
+            var(--primary) 10%,
+            var(--primary) 90%,
+            transparent 100%);
+    transform: translateX(-50%);
+    z-index: 0;
+    box-shadow: 0 0 15px var(--primary);
+    opacity: 0.6;
+}
+
+/* Add a glowing runner on the line */
+.map-line::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100px;
+    background: linear-gradient(to bottom, transparent, #fff, transparent);
+    animation: flowLine 3s linear infinite;
+    opacity: 0.8;
+}
+
+@keyframes flowLine {
+    0% {
+        top: -100px;
+    }
+
+    100% {
+        top: 100%;
+    }
+}
+
+.map-node {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+    cursor: pointer;
+    perspective: 500px;
+}
+
+.map-node.left {
+    justify-content: flex-end;
+    padding-right: 50%;
+    /* Center alignment logic */
+}
+
+.map-node.right {
+    justify-content: flex-start;
+    padding-left: 50%;
+}
+
+/* Node Content Container */
+.map-node-content {
+    background: rgba(20, 20, 25, 0.85);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 16px;
+    width: 320px;
+    padding: 12px;
+    display: flex;
+    gap: 1.2rem;
+    align-items: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    position: relative;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    /* Animation for floating effect */
+    animation: nodeFloat 4s ease-in-out infinite;
+}
+
+/* Offset left/right animations slightly */
+.map-node.left .map-node-content {
+    margin-right: 2rem;
+    transform-origin: right center;
+    animation-delay: 0s;
+}
+
+.map-node.right .map-node-content {
+    margin-left: 2rem;
+    transform-origin: left center;
+    animation-delay: 2s;
+}
+
+.map-node:hover .map-node-content {
+    transform: scale(1.1) translateY(-5px);
+    border-color: var(--primary);
+    box-shadow: 0 0 30px rgba(201, 166, 107, 0.6);
+    z-index: 10;
+    background: rgba(30, 30, 35, 0.95);
+}
+
+.map-node-img {
+    width: 70px;
+    height: 70px;
+    border-radius: 12px;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    border: 1px solid #555;
+    flex-shrink: 0;
+    overflow: hidden;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8);
+}
+
+.lock-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #999;
+    font-size: 1.5rem;
+}
+
+.map-node-info {
+    flex: 1;
+}
+
+.map-node-info h3 {
+    margin: 0 0 0.3rem 0;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+}
+
+.difficulty-tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.difficulty-tag.easy {
+    background: rgba(77, 255, 136, 0.15);
+    color: #4dff88;
+    border: 1px solid rgba(77, 255, 136, 0.3);
+}
+
+.difficulty-tag.medium {
+    background: rgba(255, 215, 0, 0.15);
+    color: #ffd700;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.difficulty-tag.hard {
+    background: rgba(255, 77, 77, 0.15);
+    color: #ff4d4d;
+    border: 1px solid rgba(255, 77, 77, 0.3);
+}
+
+.difficulty-tag.locked {
+    background: #333;
+    color: #777;
+    border: 1px solid #555;
+}
+
+/* Connector Dot */
+.map-connector {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    background: #000;
+    border: 3px solid var(--primary);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 15px var(--primary), inset 0 0 5px var(--primary);
+    z-index: 2;
+    transition: all 0.3s;
+}
+
+.map-node:hover .map-connector {
+    background: var(--primary);
+    box-shadow: 0 0 25px var(--primary), 0 0 50px var(--primary);
+    transform: translate(-50%, -50%) scale(1.3);
+}
+
+/* Animations */
+@keyframes nodeFloat {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+@keyframes dash {
+    to {
+        stroke-dashoffset: -1000;
+    }
+}
+
+.map-node.locked {
+    filter: grayscale(0.8) opacity(0.7);
+    animation: none;
+}
+
+.map-node.locked:hover {
+    transform: none;
+    cursor: default;
+}
+
+.map-node.locked .map-node-content {
+    box-shadow: none;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Detail Modal Adjustments */
+.map-detail-card {
+    border: 1px solid var(--primary);
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+    overflow: hidden;
+    animation: zoomIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.map-detail-image {
+    height: 200px;
+    width: 600px;
+    max-width: 100%;
+}
+
+.close-modal-btn {
+    top: 15px;
+    right: 15px;
+    background: rgba(0, 0, 0, 0.7);
+    width: 36px;
+    height: 36px;
+    font-size: 1.2rem;
+    transition: all 0.2s;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.close-modal-btn:hover {
+    background: var(--primary);
+    color: #000;
+    transform: rotate(90deg);
+}
