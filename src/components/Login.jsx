@@ -1,4 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabaseClient';
 
 const loginData = [
     {
@@ -23,7 +25,7 @@ const loginData = [
     }
 ];
 
-function Login({ onLogin }) {
+function Login() {
     const [index, setIndex] = useState(0);
 
     useEffect(() => {
@@ -32,6 +34,21 @@ function Login({ onLogin }) {
         }, 5000);
         return () => clearInterval(interval);
     }, []);
+
+    const handleGoogleLogin = async () => {
+        try {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+            });
+            if (error) {
+                console.error('Error logging in:', error.message);
+                alert('Đăng nhập thất bại: ' + error.message);
+            }
+        } catch (err) {
+            console.error('Unexpected error:', err);
+            alert('Đã xảy ra lỗi không mong muốn.');
+        }
+    };
 
     const current = loginData[index];
 
@@ -47,24 +64,25 @@ function Login({ onLogin }) {
                         <h2 className="gold-text-sub">KIẾM THIÊN ANH NGỮ</h2>
                     </div>
 
-                    <div className="input-group-premium">
-                        <label>Danh Tánh</label>
-                        <input type="text" placeholder="Nhập danh tánh đại hiệp..." defaultValue="Đại Hiệp" />
-                    </div>
-
-                    <div className="input-group-premium">
-                        <label>Mật Mã</label>
-                        <input type="password" placeholder="••••••••" defaultValue="password" />
-                    </div>
-
-                    <button className="wuxia-btn-premium" style={{ '--accent': current.color }} onClick={onLogin}>
-                        BƯỚC VÀO GIANG HỒ
+                    <button
+                        className="wuxia-btn-premium"
+                        style={{
+                            '--accent': current.color,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '1rem',
+                            cursor: 'pointer'
+                        }}
+                        onClick={handleGoogleLogin}
+                    >
+                        <i className="fa-brands fa-google" style={{ fontSize: '1.5rem' }}></i>
+                        ĐĂNG NHẬP BẰNG GOOGLE
                     </button>
 
                     <div className="login-footer-links">
-                        <span>Quên Mật Mã</span>
-                        <span>Đăng Ký</span>
                         <span>Cố Sự</span>
+                        <span>Điều Khoản</span>
                     </div>
                 </div>
 

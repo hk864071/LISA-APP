@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
-import { aiTutors } from './data';
+
+import React, { useState, useEffect } from 'react';
+import { supabase } from './lib/supabaseClient';
+import useGameStore from './store/useGameStore';
+import { aiTutors, tribes } from './data';
 import Login from './components/Login';
 import TribeSelection from './components/TribeSelection';
 import CharacterSelection from './components/CharacterSelection';
@@ -25,10 +28,54 @@ function App() {
   const [activeRoom, setActiveRoom] = useState(null);
   const [showLevelUp, setShowLevelUp] = useState(false);
 
-  const handleLogin = () => setView('tribe-select');
+  // Store actions
+  const loadProfile = useGameStore((state) => state.loadProfile);
+  const setConfig = useGameStore((state) => state.setConfig);
+  const syncWithSupabase = useGameStore((state) => state.syncWithSupabase);
+  const characterInfo = useGameStore((state) => state.characterInfo);
+
+  useEffect(() => {
+    // Check active session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        handleUserSession();
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        handleUserSession();
+      } else {
+        setView('login');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleUserSession = async () => {
+    await loadProfile();
+    const state = useGameStore.getState();
+    // If user has a tribe selected in profile, we *could* try to restore it
+    // But since we miss 'characterId' in store, let's just default to tribe-select for safety
+    if (state.characterInfo.tribe) {
+      // Find tribe object
+      const tribeObj = tribes.find(t => t.id === state.characterInfo.tribe);
+      if (tribeObj) {
+        setSelectedTribe(tribeObj);
+        // If we had character ID, we could restore selectedChar too
+        setView('char-select');
+        return;
+      }
+    }
+    setView('tribe-select');
+  };
 
   const handleSelectTribe = (tribe) => {
     setSelectedTribe(tribe);
+    setConfig({
+      characterInfo: { ...characterInfo, tribe: tribe.id }
+    });
     setView('char-select');
   };
 
@@ -39,6 +86,11 @@ function App() {
 
   const handleFinishNaming = (name) => {
     setCharName(name);
+    setConfig({
+      characterInfo: { ...useGameStore.getState().characterInfo, nickname: name }
+    });
+    // Sync to Supabase
+    syncWithSupabase();
     setView('home');
   };
 
@@ -87,7 +139,7 @@ function App() {
   }
 
   // View Routing
-  if (view === 'login') return <Login onLogin={handleLogin} />;
+  if (view === 'login') return <Login />;
   if (view === 'tribe-select') return <TribeSelection onSelectTribe={handleSelectTribe} />;
   if (view === 'char-select') return <CharacterSelection tribe={selectedTribe} onSelectCharacter={handleSelectChar} onBack={() => setView('tribe-select')} />;
   if (view === 'naming') return <NamingScreen character={selectedChar} tribe={selectedTribe} onFinish={handleFinishNaming} />;
