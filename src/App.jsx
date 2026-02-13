@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { supabase } from './lib/supabaseClient';
 import useGameStore from './store/useGameStore';
 import { aiTutors, tribes } from './data';
@@ -13,8 +14,11 @@ import LevelUpModal from './components/LevelUpModal';
 import CharacterProfile from './components/CharacterProfile';
 import SkillTree from './components/SkillTree';
 import WorldMap from './components/WorldMap';
+import GlobalChat from './components/GlobalChat';
+import './index.css';
 import './index.css';
 import './App.css';
+import { getRankTitle, getEvolutionIndex, getMaxXP, LEVEL_CAP } from './utils/levelSystem';
 
 function App() {
   const [view, setView] = useState('login'); // login | tribe-select | char-select | naming | home | room-list | room | character | skills | world-map
@@ -27,6 +31,43 @@ function App() {
   const [xp, setXP] = useState(0);
   const [activeRoom, setActiveRoom] = useState(null);
   const [showLevelUp, setShowLevelUp] = useState(false);
+
+  // --- AUDIO MANAGER ---
+  const audioRefs = useRef({
+    lobby: new Audio('/assets/sounds/lobby_theme.mp3'),
+    levelUp: new Audio('/assets/sounds/level_up.mp3'),
+    evolution: new Audio('/assets/sounds/evolution.mp3'),
+    training: new Audio('/assets/sounds/training_bgm.mp3')
+  });
+
+  useEffect(() => {
+    // Basic BGM Logic
+    const audios = audioRefs.current;
+    audios.lobby.loop = true;
+    audios.training.loop = true;
+    audios.lobby.volume = 0.3;
+    audios.training.volume = 0.3;
+
+    if (view === 'room') {
+      audios.lobby.pause();
+      audios.training.play().catch(e => console.log("Audio play failed (user interaction needed)", e));
+    } else {
+      audios.training.pause();
+      // audios.lobby.play().catch(e => console.log("Audio play failed", e)); // Uncomment to enable lobby music
+    }
+  }, [view]);
+
+  // Unlock Audio Context on first interaction
+  useEffect(() => {
+    const unlockAudio = () => {
+      audioRefs.current.lobby.play().then(() => {
+        audioRefs.current.lobby.pause();
+      }).catch(() => { });
+      window.removeEventListener('click', unlockAudio);
+    };
+    window.addEventListener('click', unlockAudio);
+    return () => window.removeEventListener('click', unlockAudio);
+  }, []);
 
   // Store actions
   const loadProfile = useGameStore((state) => state.loadProfile);
@@ -56,14 +97,10 @@ function App() {
   const handleUserSession = async () => {
     await loadProfile();
     const state = useGameStore.getState();
-    // If user has a tribe selected in profile, we *could* try to restore it
-    // But since we miss 'characterId' in store, let's just default to tribe-select for safety
     if (state.characterInfo.tribe) {
-      // Find tribe object
       const tribeObj = tribes.find(t => t.id === state.characterInfo.tribe);
       if (tribeObj) {
         setSelectedTribe(tribeObj);
-        // If we had character ID, we could restore selectedChar too
         setView('char-select');
         return;
       }
@@ -89,7 +126,6 @@ function App() {
     setConfig({
       characterInfo: { ...useGameStore.getState().characterInfo, nickname: name }
     });
-    // Sync to Supabase
     syncWithSupabase();
     setView('home');
   };
@@ -100,7 +136,6 @@ function App() {
   }
 
   const handleCreateRoomFromProfile = (roomConfig) => {
-    // Create a new room object based on config
     const newRoom = {
       id: Date.now(),
       host: 'You',
@@ -112,8 +147,8 @@ function App() {
   };
 
   const handleGainXP = (amount) => {
-    if (level >= 3) return; // Max level
-    const maxXP = level * 100;
+    if (level >= LEVEL_CAP) return; // Max level
+    const maxXP = getMaxXP(level);
     const newXP = xp + amount;
 
     if (newXP >= maxXP) {
@@ -125,13 +160,25 @@ function App() {
   };
 
   const handleLevelUp = () => {
-    if (level < 3) {
-      console.log('Leveling up from', level);
-      setLevel(prev => prev + 1);
-      setShowLevelUp(true); // Trigger visual effect
+    console.log('Leveling up from', level);
+    const newLevel = level + 1;
+    setLevel(newLevel);
+
+    // Play Sound
+    const isEvo = newLevel === 31 || newLevel === 61 || newLevel === 101;
+    if (isEvo) {
+      audioRefs.current.evolution.currentTime = 0;
+      audioRefs.current.evolution.play().catch(e => { });
     } else {
-      alert("Đã đạt cảnh giới tối cao!");
+      audioRefs.current.levelUp.currentTime = 0;
+      audioRefs.current.levelUp.play().catch(e => { });
     }
+
+    // Show modal only on evolution milestones (optional, or always)
+    // For now, let's show it always for dramatic effect or every 10 levels
+    // But since `evolutions` change at 30, 60, maybe show special celebration then.
+    // The user wants simple level up notification.
+    setShowLevelUp(true);
   };
 
   const closeLevelUp = () => {
@@ -144,10 +191,30 @@ function App() {
   if (view === 'char-select') return <CharacterSelection tribe={selectedTribe} onSelectCharacter={handleSelectChar} onBack={() => setView('tribe-select')} />;
   if (view === 'naming') return <NamingScreen character={selectedChar} tribe={selectedTribe} onFinish={handleFinishNaming} />;
 
-  if (view === 'room-list') return <RoomList onJoinRoom={handleJoinRoom} onBack={() => setView('home')} />;
-  if (view === 'character') return <CharacterProfile character={selectedChar} level={level} tribe={selectedTribe} onBack={() => setView('home')} onChangeCharacter={() => setView('char-select')} onCreateRoom={handleCreateRoomFromProfile} />;
-  if (view === 'skills') return <SkillTree onBack={() => setView('home')} />;
-  if (view === 'world-map') return <WorldMap onBack={() => setView('home')} onCreateRoom={handleCreateRoomFromProfile} tribe={selectedTribe} />;
+  if (view === 'room-list') return (
+    <>
+      <RoomList onJoinRoom={handleJoinRoom} onBack={() => setView('home')} />
+      <GlobalChat />
+    </>
+  );
+  if (view === 'character') return (
+    <>
+      <CharacterProfile character={selectedChar} level={level} tribe={selectedTribe} onBack={() => setView('home')} onChangeCharacter={() => setView('char-select')} onCreateRoom={handleCreateRoomFromProfile} />
+      <GlobalChat />
+    </>
+  );
+  if (view === 'skills') return (
+    <>
+      <SkillTree onBack={() => setView('home')} />
+      <GlobalChat />
+    </>
+  );
+  if (view === 'world-map') return (
+    <>
+      <WorldMap onBack={() => setView('home')} onCreateRoom={handleCreateRoomFromProfile} tribe={selectedTribe} level={level} />
+      <GlobalChat />
+    </>
+  );
 
   if (view === 'room') return (
     <>
@@ -161,7 +228,7 @@ function App() {
       )}
       <TrainingRoom
         character={selectedChar}
-        userAvatar={selectedChar.evolutions[level - 1] || selectedChar.evolutions[0]}
+        userAvatar={selectedChar.evolutions[getEvolutionIndex(level)] || selectedChar.evolutions[0]}
         tribe={selectedTribe}
         level={level}
         xp={xp}
@@ -184,26 +251,66 @@ function App() {
           newLevel={level}
           character={selectedChar}
           onClose={closeLevelUp}
+          isEvolution={level === 31 || level === 61 || level === 101}
         />
       )}
 
       {/* HUD: Top Left */}
       <div className="game-hud-top">
         <div className="char-portrait">
-          <img src={encodeURI(selectedChar.evolutions[level - 1] || selectedChar.evolutions[0])} alt="Portrait" />
+          <img src={encodeURI(selectedChar.evolutions[getEvolutionIndex(level)] || selectedChar.evolutions[0])} alt="Portrait" />
         </div>
         <div className="hud-stats">
           <div style={{ marginBottom: '0.2rem' }}>
             <span className="gold-text" style={{ fontSize: '1rem' }}>{charName}</span>
-            <span style={{ fontSize: '0.7rem', color: '#888', marginLeft: '10px' }}>Lv. {level} {selectedTribe.name}</span>
+            <span style={{ fontSize: '0.7rem', color: '#888', marginLeft: '10px' }}>Lv. {level} - {getRankTitle(level)}</span>
           </div>
           <div className="stat-bar">
             <span className="stat-label">Công Lực (XP)</span>
-            <div className="stat-fill hp-fill" style={{ width: `${Math.min((xp / (level * 100)) * 100, 100)}%` }}></div>
+            <div className="stat-fill hp-fill" style={{ width: `${Math.min((xp / getMaxXP(level)) * 100, 100)}%` }}></div>
           </div>
           <div className="stat-bar">
-            <span className="stat-label">Cấp Độ (Evolution)</span>
-            <div className="stat-fill xp-fill" style={{ width: `${(level / 3) * 100}%`, background: 'var(--gold)' }}></div>
+            <span className="stat-label">Cảnh Giới (Stage)</span>
+            {/* Show progress towards next evolution or just a filler */}
+            <div className="stat-fill xp-fill" style={{ width: `${(level % 30) / 30 * 100}%`, background: 'var(--gold)' }}></div>
+          </div>
+          {/* TEST BUTTON */}
+          {/* TEST BUTTON - JUMP STAGE */}
+          <div style={{ display: 'flex', gap: '5px', marginTop: '1rem' }}>
+            <button
+              onClick={handleLevelUp}
+              style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid #555',
+                color: '#aaa',
+                fontSize: '0.6rem',
+                cursor: 'pointer',
+                padding: '2px 5px'
+              }}
+            >
+              [+1 LVL]
+            </button>
+            <button
+              onClick={() => {
+                if (level < 31) setLevel(31);
+                else if (level < 61) setLevel(61);
+                else setLevel(1);
+                // Trigger evolution sound manually for test
+                audioRefs.current.evolution.play().catch(e => { });
+                setShowLevelUp(true);
+              }}
+              style={{
+                background: 'rgba(255, 215, 0, 0.2)',
+                border: '1px solid #ffd700',
+                color: '#ffd700',
+                fontSize: '0.6rem',
+                cursor: 'pointer',
+                padding: '2px 5px',
+                fontWeight: 'bold'
+              }}
+            >
+              [+30 STAGE]
+            </button>
           </div>
         </div>
       </div>
@@ -222,8 +329,38 @@ function App() {
       </div>
 
       {/* Center Character */}
+      {/* Center Character */}
       <div className="game-center-char">
-        <img src={encodeURI(selectedChar.evolutions[level - 1] || selectedChar.evolutions[0])} alt="Character" className="game-char-main" />
+        <motion.div
+          style={{
+            position: 'absolute',
+            bottom: '-20px',
+            left: '50%',
+            transform: 'translate(-50%, 0)',
+            width: '600px',
+            height: '200px',
+            background: 'radial-gradient(ellipse at center, rgba(255, 215, 0, 0.15) 0%, transparent 70%)',
+            filter: 'blur(40px)',
+            zIndex: -1,
+            pointerEvents: 'none'
+          }}
+          animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.img
+          src={encodeURI(selectedChar.evolutions[getEvolutionIndex(level)] || selectedChar.evolutions[0])}
+          alt="Character"
+          className="game-char-main"
+          animate={{
+            y: [0, -15, 0],
+            filter: ["brightness(1) drop-shadow(0 0 0px transparent)", "brightness(1.1) drop-shadow(0 0 20px rgba(255, 215, 0, 0.5))", "brightness(1) drop-shadow(0 0 0px transparent)"]
+          }}
+          transition={{
+            duration: 4,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
       </div>
 
       {/* Bottom Menu */}
@@ -249,6 +386,8 @@ function App() {
           <span>Bản Đồ</span>
         </div>
       </div>
+
+      <GlobalChat />
 
       <div className="copyright" style={{ bottom: '1rem', opacity: 0.3 }}>
         LISA WUXIA WORLD - HỌC TIẾNG ANH NHƯ CHƠI GAME

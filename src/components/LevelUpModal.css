@@ -1,0 +1,219 @@
+/* LEVEL UP MODAL STYLES */
+.levelup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    backdrop-filter: blur(10px);
+    animation: fadeInModal 0.5s ease-out;
+}
+
+.levelup-container {
+    text-align: center;
+    position: relative;
+    z-index: 10;
+}
+
+/* --- NORMAL LEVEL UP --- */
+.levelup-normal-title {
+    font-size: 2rem;
+    color: var(--gold);
+    text-transform: uppercase;
+    animation: textPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.levelup-normal-text {
+    font-size: 5rem;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+    margin: 1rem 0;
+    animation: slideUp 0.5s ease-out;
+}
+
+/* --- EVOLUTION (STAGE BREAKTHROUGH) --- */
+.evolution-container {
+    position: relative;
+    width: 600px;
+    height: 600px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.old-char {
+    position: absolute;
+    width: 300px;
+    height: auto;
+    filter: grayscale(100%) brightness(0.5);
+    opacity: 0.5;
+    transform: scale(0.8);
+    animation: fadeOutOld 2s ease-in forwards;
+}
+
+.new-char {
+    position: absolute;
+    width: 400px;
+    height: auto;
+    filter: drop-shadow(0 0 30px rgba(255, 215, 0, 0.8));
+    opacity: 0;
+    transform: scale(1.2);
+    animation: popInNew 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards 1s;
+    /* Delay 1s */
+}
+
+.thunder-strike {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 10px;
+    height: 0;
+    background: #fff;
+    box-shadow: 0 0 20px #fff, 0 0 40px #00ffff;
+    z-index: 20;
+    animation: thunderStrike 0.5s ease-out forwards 0.8s;
+}
+
+.shockwave {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    border: 5px solid rgba(255, 215, 0, 0.8);
+    transform: translate(-50%, -50%);
+    animation: shockwaveExpand 1s ease-out forwards 1s;
+}
+
+.evolution-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 3rem;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 5px;
+    margin-top: 2rem;
+    opacity: 0;
+    animation: textFadeIn 1s ease-out forwards 1.5s;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+}
+
+.rank-text {
+    font-size: 1.5rem;
+    color: #fff;
+    margin-top: 0.5rem;
+    opacity: 0;
+    animation: textFadeIn 1s ease-out forwards 2s;
+}
+
+/* --- ANIMATIONS --- */
+@keyframes fadeInModal {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes textPop {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOutOld {
+    0% {
+        opacity: 0.5;
+        transform: scale(0.8);
+    }
+
+    100% {
+        opacity: 0;
+        transform: scale(0);
+        display: none;
+    }
+}
+
+@keyframes popInNew {
+    0% {
+        opacity: 0;
+        transform: scale(0.5) translateY(50px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1.2) translateY(0);
+    }
+}
+
+@keyframes thunderStrike {
+    0% {
+        height: 0;
+        opacity: 1;
+    }
+
+    50% {
+        height: 100%;
+        opacity: 1;
+    }
+
+    100% {
+        height: 100%;
+        opacity: 0;
+    }
+}
+
+@keyframes shockwaveExpand {
+    0% {
+        width: 0;
+        height: 0;
+        opacity: 1;
+        border-width: 50px;
+    }
+
+    100% {
+        width: 800px;
+        height: 800px;
+        opacity: 0;
+        border-width: 0;
+    }
+}
+
+@keyframes textFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

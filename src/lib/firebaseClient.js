@@ -38,3 +38,27 @@ export const toggleRaiseHand = (roomId, userId, userName, isRaising) => {
         remove(handRef);
     }
 };
+
+export const sendGlobalChatMessage = (senderName, message, avatarUrl = '') => {
+    const chatRef = ref(db, 'global_chat/messages');
+    push(chatRef, {
+        sender: senderName,
+        message: message,
+        avatar: avatarUrl,
+        timestamp: Date.now()
+    }).catch(error => {
+        console.error("FIREBASE ERROR (Global):", error);
+    });
+};
+
+export const sendRoomChatMessage = (roomId, senderName, message, avatarUrl = '') => {
+    const chatRef = ref(db, `rooms/${roomId}/messages`);
+    push(chatRef, {
+        sender: senderName,
+        message: message,
+        avatar: avatarUrl,
+        timestamp: Date.now()
+    }).catch(error => {
+        console.error("FIREBASE ERROR (Room):", error);
+    });
+};

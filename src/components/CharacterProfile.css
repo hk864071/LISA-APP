@@ -13,7 +13,8 @@
     display: flex;
     flex-direction: column;
     padding: 2rem;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .rpg-overlay {
@@ -641,4 +642,99 @@
     border-color: var(--primary);
     box-shadow: 0 0 15px var(--primary);
     font-weight: bold;
+}
+
+/* --- RESPONSIVE DESIGN --- */
+
+@media (max-width: 1366px) {
+    .profile-container {
+        grid-template-columns: 1fr 1fr;
+        /* 2 columns for smaller laptops */
+    }
+
+    .profile-gear-section {
+        grid-column: span 2;
+        /* Gear takes full width at bottom */
+    }
+
+    .rpg-screen {
+        overflow-y: auto;
+        /* Allow Scroll */
+    }
+}
+
+@media (max-width: 768px) {
+    .rpg-screen {
+        overflow-y: auto;
+        /* Enable vertical scroll */
+        height: 100vh;
+        display: block;
+        /* Remove flex column ensure scrolling works */
+        padding: 1rem;
+    }
+
+    .rpg-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .profile-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        padding-bottom: 3rem;
+        /* Space for scroll */
+    }
+
+    /* Reorder for logical flow on mobile */
+    .profile-left-column {
+        order: 1;
+    }
+
+    .profile-stats-section {
+        order: 2;
+    }
+
+    .profile-gear-section {
+        order: 3;
+    }
+
+    /* Reduce char size */
+    .profile-char-section {
+        height: 350px;
+        margin-bottom: 0;
+    }
+
+    .profile-char-img {
+        height: 100%;
+        max-height: 280px;
+    }
+
+    .char-info-plate {
+        bottom: 0;
+        position: relative;
+        margin-top: -3rem;
+        /* Moved up to overlay slightly */
+        width: 100%;
+    }
+
+    .map-slide-container {
+        max-height: 200px;
+        /* Reduced vertical space for map list */
+    }
+
+    .map-scroller {
+        max-height: 150px;
+    }
+
+    /* Adjust text sizes */
+    .stat-row {
+        gap: 0.5rem;
+    }
+
+    .stat-labels {
+        font-size: 0.8rem;
+    }
 }
