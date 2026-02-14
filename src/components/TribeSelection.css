@@ -1,0 +1,55 @@
+/* TribeSelection.css */
+
+.tribe-selection-screen {
+    background-size: cover;
+    background-position: center;
+    transition: background-image 0.5s ease-in-out;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
+}
+
+.tribe-title {
+    font-size: 3rem;
+    margin-top: 2rem;
+    text-align: center;
+}
+
+.tribe-subtitle {
+    color: #ccc;
+    margin-bottom: 3rem;
+    text-align: center;
+    max-width: 600px;
+    line-height: 1.5;
+}
+
+/* Tribe Grid is already in index.css but let's refine context here if needed */
+/* We rely on global tribe-grid from index.css for now as it handles grid */
+
+.tribe-card .orb {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin: 1rem auto 0;
+    box-shadow: 0 0 10px currentColor;
+}
+
+/* --- RESPONSIVE DESIGN --- */
+
+@media (max-width: 768px) {
+    .tribe-selection-screen {
+        padding: 1rem;
+    }
+
+    .tribe-title {
+        font-size: 2rem;
+        margin-top: 1rem;
+    }
+
+    .tribe-subtitle {
+        margin-bottom: 1.5rem;
+        font-size: 0.9rem;
+    }
+}

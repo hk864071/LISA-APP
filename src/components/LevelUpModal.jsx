@@ -18,7 +18,7 @@ function LevelUpModal({ oldLevel, newLevel, character, onClose, isEvolution }) {
     // --- RENDER: EVOLUTION ---
     if (isStageUp) {
         return (
-            <div className="levelup-overlay" onClick={onClose}>
+            <div className="levelup-overlay" onClick={onClose} style={{ flexDirection: 'column' }}>
                 <div className="evolution-container">
                     {/* Shockwave Effect */}
                     <div className="shockwave"></div>
@@ -39,7 +39,7 @@ function LevelUpModal({ oldLevel, newLevel, character, onClose, isEvolution }) {
                     </div>
                 </div>
 
-                <div style={{ position: 'absolute', bottom: '15%', textAlign: 'center', width: '100%' }}>
+                <div style={{ textAlign: 'center', width: '100%', marginTop: '2rem', zIndex: 30 }}>
                     <div className="evolution-text glow-text">
                         ĐỘT PHÁ CẢNH GIỚI
                     </div>

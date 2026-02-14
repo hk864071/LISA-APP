@@ -23,7 +23,7 @@ function GlobalChat({ roomId = null, title = null }) {
     const senderName = characterInfo.nickname || 'Khách';
     const senderAvatar = 'https://cdn-icons-png.flaticon.com/512/1077/1077114.png';
 
-    const chatTitle = title || (roomId ? 'PHÒNG LUẬN ĐẠO' : 'KÊNH THẾ GIỚI');
+    const chatTitle = title || (roomId ? 'PHÒNG LUẬN ĐẠO' : 'KÊNH CHAT');
     const dbPath = roomId ? `rooms/${roomId}/messages` : 'global_chat/messages';
 
     // Rate Limit Config
@@ -135,22 +135,45 @@ function GlobalChat({ roomId = null, title = null }) {
 
     return (
         <motion.div
-            className={`global-chat-container ${!isExpanded ? 'minimized' : ''}`}
+            className={`global-chat-container ${!isExpanded ? 'minimized-icon' : ''}`}
             animate={{
-                height: isExpanded ? 480 : 50,
-                width: isExpanded ? 350 : 200,
-                y: isExpanded ? 0 : 0
+                height: isExpanded ? 500 : 64, // 64px for a nice circle
+                width: isExpanded ? 350 : 64,
+                maxWidth: "90vw",
+                borderRadius: isExpanded ? 16 : 32, // Perfect circle when 64px
             }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
-            <div className="chat-header glass-premium-dark" onClick={() => setIsExpanded(!isExpanded)}>
-                <div className="chat-title-row">
-                    <div className={`status-dot ${isMuted ? 'muted' : ''}`} style={{ background: isMuted ? '#ff0000' : '#4dff88' }}></div>
-                    <span className="chat-title-text">{chatTitle}</span>
-                </div>
-                <div className="chat-toggle-icon">
-                    <i className={`fa-solid ${isExpanded ? 'fa-minus' : 'fa-chevron-up'}`}></i>
-                </div>
+            <div
+                className={`chat-header glass-premium-dark ${!isExpanded ? 'header-minimized' : ''}`}
+                onClick={() => setIsExpanded(!isExpanded)}
+                style={{
+                    justifyContent: isExpanded ? 'space-between' : 'center',
+                    padding: isExpanded ? '0 16px' : '0',
+                    borderRadius: isExpanded ? '12px 12px 0 0' : '50%'
+                }}
+            >
+                {/* EXPANDED HEADER */}
+                {isExpanded && (
+                    <>
+                        <div className="chat-title-row">
+                            <div className={`status-dot ${isMuted ? 'muted' : ''}`} style={{ background: isMuted ? '#ff0000' : '#4dff88' }}></div>
+                            <span className="chat-title-text">{chatTitle}</span>
+                        </div>
+                        <div className="chat-toggle-icon">
+                            <i className="fa-solid fa-minus"></i>
+                        </div>
+                    </>
+                )}
+
+                {/* MINIMIZED ICON */}
+                {!isExpanded && (
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
+                        <i className="fa-solid fa-comments" style={{ fontSize: '1.5rem', color: 'var(--gold, #FFD700)' }}></i>
+                        {/* Notification Badge if needed */}
+                        {/* <div style={{ position: 'absolute', top: 0, right: 0, width: 12, height: 12, background: 'red', borderRadius: '50%' }}></div> */}
+                    </div>
+                )}
             </div>
 
             <AnimatePresence>

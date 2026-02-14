@@ -86,7 +86,7 @@ export const tribes = [
         evolutions: [
           `${assetPath}/Tribe 1 - COREFIRE/tribe 1 - character/KASAO/c1.png`,
           `${assetPath}/Tribe 1 - COREFIRE/tribe 1 - character/KASAO/c2.png`,
-          `${assetPath}/Tribe 1 - COREFIRE/tribe 1 - character/KASAO/Artboard 2.png`
+          `${assetPath}/Tribe 1 - COREFIRE/tribe 1 - character/KASAO/c3.png`
         ]
       },
       {

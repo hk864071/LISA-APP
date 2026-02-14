@@ -25,48 +25,71 @@ function App() {
   const [selectedTribe, setSelectedTribe] = useState(null);
   const [selectedChar, setSelectedChar] = useState(null);
   const [charName, setCharName] = useState('');
+  const [isProfileLoaded, setIsProfileLoaded] = useState(false);
 
   // Game State
-  const [level, setLevel] = useState(1);
-  const [xp, setXP] = useState(0);
+  const level = useGameStore((state) => state.currentLevel);
+  const xp = useGameStore((state) => state.xp);
+  const addXP = useGameStore((state) => state.addXP);
+  const setLevel = useGameStore((state) => state.setLevel);
+
   const [activeRoom, setActiveRoom] = useState(null);
   const [showLevelUp, setShowLevelUp] = useState(false);
+  const prevLevelRef = useRef(level);
+
+  // Monitor Level Up
+  useEffect(() => {
+    // Prevent level up effect triggers during initial profile load
+    if (!isProfileLoaded) {
+      prevLevelRef.current = level;
+      return;
+    }
+
+    if (level > prevLevelRef.current) {
+      handleLevelUpEffect();
+    }
+    prevLevelRef.current = level;
+  }, [level, isProfileLoaded]);
 
   // --- AUDIO MANAGER ---
   const audioRefs = useRef({
-    lobby: new Audio('/assets/sounds/lobby_theme.mp3'),
-    levelUp: new Audio('/assets/sounds/level_up.mp3'),
-    evolution: new Audio('/assets/sounds/evolution.mp3'),
-    training: new Audio('/assets/sounds/training_bgm.mp3')
+    // lobby: new Audio('/assets/sounds/lobby_theme.mp3'),
+    // levelUp: new Audio('/assets/sounds/level_up.mp3'),
+    // evolution: new Audio('/assets/sounds/evolution.mp3'),
+    // training: new Audio('/assets/sounds/training_bgm.mp3')
+    lobby: new Audio(),
+    levelUp: new Audio(),
+    evolution: new Audio(),
+    training: new Audio()
   });
 
   useEffect(() => {
-    // Basic BGM Logic
-    const audios = audioRefs.current;
-    audios.lobby.loop = true;
-    audios.training.loop = true;
-    audios.lobby.volume = 0.3;
-    audios.training.volume = 0.3;
+    // Basic BGM Logic - DISABLED (Files are empty 0KB)
+    // const audios = audioRefs.current;
+    // audios.lobby.loop = true;
+    // audios.training.loop = true;
+    // audios.lobby.volume = 0.3;
+    // audios.training.volume = 0.3;
 
-    if (view === 'room') {
-      audios.lobby.pause();
-      audios.training.play().catch(e => console.log("Audio play failed (user interaction needed)", e));
-    } else {
-      audios.training.pause();
-      // audios.lobby.play().catch(e => console.log("Audio play failed", e)); // Uncomment to enable lobby music
-    }
+    // if (view === 'room') {
+    //   audios.lobby.pause();
+    //   audios.training.play().catch(e => console.log("Audio play failed (user interaction needed)", e));
+    // } else {
+    //   audios.training.pause();
+    //   // audios.lobby.play().catch(e => console.log("Audio play failed", e)); 
+    // }
   }, [view]);
 
   // Unlock Audio Context on first interaction
   useEffect(() => {
-    const unlockAudio = () => {
-      audioRefs.current.lobby.play().then(() => {
-        audioRefs.current.lobby.pause();
-      }).catch(() => { });
-      window.removeEventListener('click', unlockAudio);
-    };
-    window.addEventListener('click', unlockAudio);
-    return () => window.removeEventListener('click', unlockAudio);
+    // const unlockAudio = () => {
+    //   audioRefs.current.lobby.play().then(() => {
+    //     audioRefs.current.lobby.pause();
+    //   }).catch(() => { });
+    //   window.removeEventListener('click', unlockAudio);
+    // };
+    // window.addEventListener('click', unlockAudio);
+    // return () => window.removeEventListener('click', unlockAudio);
   }, []);
 
   // Store actions
@@ -96,12 +119,33 @@ function App() {
 
   const handleUserSession = async () => {
     await loadProfile();
+    setIsProfileLoaded(true); // Mark profile as loaded to enable level up listeners
     const state = useGameStore.getState();
-    if (state.characterInfo.tribe) {
-      const tribeObj = tribes.find(t => t.id === state.characterInfo.tribe);
+    const { tribe, character, nickname } = state.characterInfo;
+
+    // Route based on what we have
+    if (tribe) {
+      const tribeObj = tribes.find(t => t.id === tribe);
       if (tribeObj) {
         setSelectedTribe(tribeObj);
-        setView('char-select');
+
+        if (character) {
+          const charObj = tribeObj.characters.find(c => c.name === character);
+          if (charObj) {
+            setSelectedChar(charObj);
+
+            if (nickname && nickname !== 'Đại Hiệp') {
+              setCharName(nickname);
+              setView('home'); // Fully restored
+              return;
+            }
+
+            setView('naming'); // Character picked but not named
+            return;
+          }
+        }
+
+        setView('char-select'); // Tribe picked but not character
         return;
       }
     }
@@ -111,13 +155,19 @@ function App() {
   const handleSelectTribe = (tribe) => {
     setSelectedTribe(tribe);
     setConfig({
-      characterInfo: { ...characterInfo, tribe: tribe.id }
+      characterInfo: { ...useGameStore.getState().characterInfo, tribe: tribe.id }
     });
+    // Save immediate progress
+    setTimeout(() => syncWithSupabase(), 0);
     setView('char-select');
   };
 
   const handleSelectChar = (char) => {
     setSelectedChar(char);
+    setConfig({
+      characterInfo: { ...useGameStore.getState().characterInfo, character: char.name }
+    });
+    setTimeout(() => syncWithSupabase(), 0);
     setView('naming');
   };
 
@@ -149,36 +199,28 @@ function App() {
   const handleGainXP = (amount) => {
     if (level >= LEVEL_CAP) return; // Max level
     const maxXP = getMaxXP(level);
-    const newXP = xp + amount;
+    addXP(amount, maxXP);
+  };
 
-    if (newXP >= maxXP) {
-      setXP(0);
-      handleLevelUp();
-    } else {
-      setXP(newXP);
-    }
+  const handleLevelUpEffect = () => {
+    console.log('Leveling up to', level);
+
+    // Play Sound - DISABLED
+    const isEvo = level === 31 || level === 61 || level === 101;
+    // if (isEvo) {
+    //   audioRefs.current.evolution.currentTime = 0;
+    //   audioRefs.current.evolution.play().catch(e => { });
+    // } else {
+    //   audioRefs.current.levelUp.currentTime = 0;
+    //   audioRefs.current.levelUp.play().catch(e => { });
+    // }
+
+    setShowLevelUp(true);
   };
 
   const handleLevelUp = () => {
-    console.log('Leveling up from', level);
-    const newLevel = level + 1;
-    setLevel(newLevel);
-
-    // Play Sound
-    const isEvo = newLevel === 31 || newLevel === 61 || newLevel === 101;
-    if (isEvo) {
-      audioRefs.current.evolution.currentTime = 0;
-      audioRefs.current.evolution.play().catch(e => { });
-    } else {
-      audioRefs.current.levelUp.currentTime = 0;
-      audioRefs.current.levelUp.play().catch(e => { });
-    }
-
-    // Show modal only on evolution milestones (optional, or always)
-    // For now, let's show it always for dramatic effect or every 10 levels
-    // But since `evolutions` change at 30, 60, maybe show special celebration then.
-    // The user wants simple level up notification.
-    setShowLevelUp(true);
+    // Debug function to force level up
+    setLevel(level + 1);
   };
 
   const closeLevelUp = () => {
@@ -276,6 +318,7 @@ function App() {
           </div>
           {/* TEST BUTTON */}
           {/* TEST BUTTON - JUMP STAGE */}
+          {/* TEST BUTTON - JUMP STAGE */}
           <div style={{ display: 'flex', gap: '5px', marginTop: '1rem' }}>
             <button
               onClick={handleLevelUp}
@@ -295,8 +338,6 @@ function App() {
                 if (level < 31) setLevel(31);
                 else if (level < 61) setLevel(61);
                 else setLevel(1);
-                // Trigger evolution sound manually for test
-                audioRefs.current.evolution.play().catch(e => { });
                 setShowLevelUp(true);
               }}
               style={{

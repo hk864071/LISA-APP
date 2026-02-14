@@ -1,20 +1,23 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import useGameStore from '../store/useGameStore';
 import { motion, AnimatePresence } from 'framer-motion';
-import './RoomList.css';
 import './RoomList.css';
 import './RoomListPremium.css';
 import { STAGE_CONTENT, canAccessStage } from '../data/stageContent';
 
 function RoomList({ level, onJoinRoom, onCreateRoom, onBack }) {
     const [searchTerm, setSearchTerm] = useState('');
-    const [rooms, setRooms] = useState([
-        { id: 1, name: 'AI Ethics Discussion', host: 'Master Flora', level: 'Beginner', topic: 'Ethics', participants: 3, max: 5 },
-        { id: 2, name: 'Neural Networks 101', host: 'Sensei Wu', level: 'Intermediate', topic: 'Tech', participants: 5, max: 5 }, // Full
-        { id: 3, name: 'Daily Conversation', host: 'User123', level: 'All Levels', topic: 'Daily', participants: 1, max: 4 },
-        { id: 4, name: 'Exam Prep: IELTS', host: 'Teacher John', level: 'Advanced', topic: 'Exam', participants: 2, max: 6 },
-        { id: 5, name: 'Business English', host: 'CEO Mark', level: 'Intermediate', topic: 'Business', participants: 3, max: 4 },
-    ]);
+    const { rooms, fetchRooms, createRoom, subscribeToRooms, isLoadingRooms } = useGameStore(state => state);
+
+    useEffect(() => {
+        fetchRooms();
+        // Subscribe to Realtime updates
+        const unsubscribe = subscribeToRooms();
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
+    }, []);
 
     // Modal state for creating room
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -28,20 +31,34 @@ function RoomList({ level, onJoinRoom, onCreateRoom, onBack }) {
         { name: "Hồ Sen", img: "/assets/Tribe 1  - BEAMJOY/Tribe 1 - Background/bg beamjoy.png" }
     ];
 
-    const handleCreateSubmit = (e) => {
+    const handleCreateSubmit = async (e) => {
         e.preventDefault();
-        const newRoom = {
-            id: rooms.length + 1,
-            name: newRoomConfig.name || 'New Room',
-            host: 'You',
+        const config = {
+            name: newRoomConfig.name || 'Võ Đường Mới',
+            topic: newRoomConfig.topic || 'General',
             level: newRoomConfig.level,
-            topic: newRoomConfig.topic,
-            participants: 1,
-            max: 5
+            background: availableMaps[newRoomConfig.mapId]?.img || availableMaps[0].img
         };
-        setRooms([newRoom, ...rooms]);
-        setShowCreateModal(false);
-        onJoinRoom(newRoom);
+
+        const createdRoom = await createRoom(config.name, config.topic, config.level, config.background);
+
+        if (createdRoom) {
+            setShowCreateModal(false);
+            // Transform for UI (TrainingRoom expects specific props)
+            const roomUI = {
+                id: createdRoom.room_id,
+                name: createdRoom.name,
+                host: 'You', // Since we created it
+                level: config.level,
+                topic: createdRoom.topic,
+                participants: 1,
+                max: createdRoom.max_participants || 5,
+                background: createdRoom.background_image
+            };
+            onJoinRoom(roomUI);
+        } else {
+            alert("Không thể lập đàn (Create Failed). Vui lòng thử lại!");
+        }
     };
 
     const containerVariants = {
@@ -62,7 +79,15 @@ function RoomList({ level, onJoinRoom, onCreateRoom, onBack }) {
         }
     };
 
-    const filteredRooms = rooms.filter(r => r.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    const filteredRooms = rooms.filter(r => {
+        if (!r.name) return false; // Skip rooms without names
+        return r.name.toLowerCase().includes(searchTerm.toLowerCase());
+    });
+
+    // Force re-render animation when data changes
+    const hasRooms = filteredRooms.length > 0;
+
+    console.log('🖼️ Rendering RoomList with:', filteredRooms.length, 'rooms');
 
     return (
         <div className="room-list-container">
@@ -72,7 +97,7 @@ function RoomList({ level, onJoinRoom, onCreateRoom, onBack }) {
                     <i className="fa-solid fa-arrow-left"></i> QUAY LẠI
                 </button>
                 <h1 className="dojo-title">SẢNH TU LUYỆN</h1>
-                <div style={{ width: '100px' }}></div>
+                <div className="header-spacer"></div>
             </div>
 
             {/* Controls */}
@@ -96,54 +121,108 @@ function RoomList({ level, onJoinRoom, onCreateRoom, onBack }) {
             </div>
 
             {/* Room Grid with Animation */}
+            {/* Key added to force re-mount animation when data arrives */}
             <motion.div
+                key={filteredRooms.length}
                 className="room-grid"
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
             >
-                {filteredRooms.map(room => (
-                    <motion.div
-                        key={room.id}
-                        className="room-card-premium"
-                        variants={itemVariants}
-                        whileHover={{ scale: 1.03 }}
-                    >
-                        <div className="room-header-card">
-                            <span className={`room-status-badge ${room.participants >= room.max ? 'full' : 'available'}`}>
-                                {room.participants >= room.max ? 'ĐẦY' : 'SẴN SÀNG'}
-                            </span>
-                            <div className="room-level-badge">
-                                {room.level === 'Beginner' && <i className="fa-solid fa-seedling"></i>}
-                                {room.level === 'Intermediate' && <i className="fa-solid fa-shield-halved"></i>}
-                                {room.level === 'Advanced' && <i className="fa-solid fa-dragon"></i>}
-                            </div>
-                        </div>
+                {isLoadingRooms && !hasRooms ? (
+                    <div style={{ textAlign: 'center', width: '100%', padding: '3rem', color: '#888', gridColumn: '1 / -1' }}>
+                        <i className="fa-solid fa-circle-notch fa-spin" style={{ fontSize: '3rem', marginBottom: '1rem', color: 'var(--gold)' }}></i>
+                        <p>Đang dò tìm tín hiệu...</p>
+                    </div>
+                ) : !hasRooms ? (
+                    <div style={{ textAlign: 'center', width: '100%', padding: '3rem', color: '#666', gridColumn: '1 / -1' }}>
+                        <i className="fa-solid fa-ghost" style={{ fontSize: '3rem', marginBottom: '1rem', display: 'block' }}></i>
+                        {searchTerm ? 'Không tìm thấy phòng phù hợp...' : 'Chưa có võ đường nào được mở...'}
+                    </div>
+                ) : (
+                    filteredRooms.map(room => {
+                        // FIX DISPLAY FOR BROKEN JSON NAMES (Legacy Data)
+                        let displayName = room.name;
+                        let displayTopic = room.topic;
+                        let displayLevel = room.level || (room.current_level === 3 ? 'Advanced' : (room.current_level === 2 ? 'Intermediate' : 'Beginner'));
+                        let displayBg = room.background_image;
 
-                        <div>
-                            <h3 className="room-name">{room.name}</h3>
-                            <div className="room-topic">
-                                <i className="fa-solid fa-scroll"></i> {room.topic}
-                            </div>
-                            <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.5rem' }}>
-                                Host: <span style={{ color: '#aaa', fontWeight: 'bold' }}>{room.host}</span>
-                            </div>
-                        </div>
+                        if (typeof room.name === 'string' && room.name.startsWith('{')) {
+                            try {
+                                const parsed = JSON.parse(room.name);
+                                displayName = parsed.name || 'Room Lỗi Tên';
+                                displayTopic = parsed.topic || displayTopic;
+                                displayLevel = parsed.level || displayLevel;
+                                displayBg = parsed.background || displayBg;
+                            } catch (e) {
+                                console.error('Error parsing room name JSON', e);
+                            }
+                        }
 
-                        <div className="room-footer">
-                            <div className="room-users">
-                                <i className="fa-solid fa-user-group"></i> {room.participants}/{room.max}
-                            </div>
-                            <button
-                                className="join-btn"
-                                onClick={() => onJoinRoom(room)}
-                                disabled={room.participants >= room.max}
+                        // Normalize DB fields for UI
+                        const participants = room.current_participants || room.participants || 1;
+                        const max = room.max || room.max_participants || 5;
+                        const isFull = participants >= max;
+                        const host = room.host || 'Ẩn Danh'; // Note: 'host' column might be empty now, logic might need 'host_name' if added later
+
+                        // Use extracted values
+                        const level = displayLevel;
+                        const topic = displayTopic;
+                        const name = displayName;
+
+                        return (
+                            <motion.div
+                                key={room.id || room.room_id}
+                                className="room-card-premium"
+                                variants={itemVariants}
+                                whileHover={{ scale: 1.03 }}
                             >
-                                NHẬP THẤT
-                            </button>
-                        </div>
-                    </motion.div>
-                ))}
+                                <div className="room-header-card">
+                                    <span className={`room-status-badge ${isFull ? 'full' : 'available'}`}>
+                                        {isFull ? 'ĐẦY' : 'SẴN SÀNG'}
+                                    </span>
+                                    <div className="room-level-badge">
+                                        {level === 'Beginner' && <i className="fa-solid fa-seedling"></i>}
+                                        {level === 'Intermediate' && <i className="fa-solid fa-shield-halved"></i>}
+                                        {level === 'Advanced' && <i className="fa-solid fa-dragon"></i>}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h3 className="room-name">{name}</h3>
+                                    <div className="room-topic">
+                                        <i className="fa-solid fa-scroll"></i> {topic}
+                                    </div>
+                                    <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.5rem' }}>
+                                        Host: <span style={{ color: '#aaa', fontWeight: 'bold' }}>{host}</span>
+                                    </div>
+                                </div>
+
+                                <div className="room-footer">
+                                    <div className="room-users">
+                                        <i className="fa-solid fa-user-group"></i> {participants}/{max}
+                                    </div>
+                                    <button
+                                        className="join-btn"
+                                        onClick={() => onJoinRoom({
+                                            ...room,
+                                            id: room.id || room.room_id,
+                                            name: name, // Use cleansed name
+                                            topic: topic, // Use cleansed topic
+                                            level: level, // Use cleansed level
+                                            participants: participants,
+                                            max: max,
+                                            background: displayBg // Use correct background
+                                        })}
+                                        disabled={isFull}
+                                    >
+                                        NHẬP THẤT
+                                    </button>
+                                </div>
+                            </motion.div>
+                        );
+                    })
+                )}
             </motion.div>
 
             {/* Create Room Modal - Reused from previous logic but stylized better */}
@@ -154,6 +233,7 @@ function RoomList({ level, onJoinRoom, onCreateRoom, onBack }) {
                         style={{ maxWidth: '800px', width: '95%' }}
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
+
                     >
                         {/* Header & Stepper */}
                         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
@@ -297,8 +377,9 @@ function RoomList({ level, onJoinRoom, onCreateRoom, onBack }) {
                         </div>
                     </motion.div>
                 </div>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 }
 
