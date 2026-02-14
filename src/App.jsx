@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from './lib/supabaseClient';
+import { sendGlobalChatMessage } from './lib/firebaseClient';
 import useGameStore from './store/useGameStore';
 import { aiTutors, tribes } from './data';
 import Login from './components/Login';
@@ -18,7 +19,8 @@ import GlobalChat from './components/GlobalChat';
 import './index.css';
 import './index.css';
 import './App.css';
-import { getRankTitle, getEvolutionIndex, getMaxXP, LEVEL_CAP } from './utils/levelSystem';
+import './App.css';
+import { getRankTitle, getEvolutionIndex, getMaxXP, LEVEL_CAP, getDisplayLevel } from './utils/levelSystem';
 
 function App() {
   const [view, setView] = useState('login'); // login | tribe-select | char-select | naming | home | room-list | room | character | skills | world-map
@@ -207,6 +209,14 @@ function App() {
 
     // Play Sound - DISABLED
     const isEvo = level === 31 || level === 61 || level === 101;
+
+    // SERVER-WIDE NOTIFICATION
+    if (isEvo) {
+      const rankTitle = getRankTitle(level);
+      const msg = `Chúc mừng ${charName} đã đột phá cảnh giới, thăng cấp lên ${rankTitle}!`;
+      sendGlobalChatMessage("HỆ THỐNG", msg, "https://cdn-icons-png.flaticon.com/512/10626/10626573.png"); // System Icon
+    }
+
     // if (isEvo) {
     //   audioRefs.current.evolution.currentTime = 0;
     //   audioRefs.current.evolution.play().catch(e => { });
@@ -305,7 +315,7 @@ function App() {
         <div className="hud-stats">
           <div style={{ marginBottom: '0.2rem' }}>
             <span className="gold-text" style={{ fontSize: '1rem' }}>{charName}</span>
-            <span style={{ fontSize: '0.7rem', color: '#888', marginLeft: '10px' }}>Lv. {level} - {getRankTitle(level)}</span>
+            <span style={{ fontSize: '0.7rem', color: '#888', marginLeft: '10px' }}>{getDisplayLevel(level)} - {getRankTitle(level)}</span>
           </div>
           <div className="stat-bar">
             <span className="stat-label">Công Lực (XP)</span>

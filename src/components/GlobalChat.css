@@ -148,6 +148,41 @@
     border-top-right-radius: 2px;
 }
 
+/* SYSTEM ANNOUNCEMENT */
+.chat-row.system {
+    justify-content: center;
+    width: 100%;
+    margin-bottom: 5px;
+}
+
+.chat-bubble.system-announcement {
+    background: linear-gradient(90deg, rgba(60, 0, 0, 0.9) 0%, rgba(120, 10, 10, 0.9) 50%, rgba(60, 0, 0, 0.9) 100%);
+    border: 1px solid #ff4d4d;
+    color: #ffd700;
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: bold;
+    box-shadow: 0 0 10px rgba(255, 77, 77, 0.3);
+    width: 100%;
+    border-radius: 8px;
+    padding: 8px;
+    animation: glowPulse 2s infinite;
+}
+
+@keyframes glowPulse {
+    0% {
+        box-shadow: 0 0 5px rgba(255, 77, 77, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 0 15px rgba(255, 77, 77, 0.6);
+    }
+
+    100% {
+        box-shadow: 0 0 5px rgba(255, 77, 77, 0.3);
+    }
+}
+
 .sender-label {
     font-size: 0.65rem;
     color: #aaa;

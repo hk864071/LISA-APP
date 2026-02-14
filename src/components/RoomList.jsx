@@ -329,28 +329,45 @@ function RoomList({ level, onJoinRoom, onCreateRoom, onBack }) {
                         {step === 3 && (
                             <div style={{ padding: '0 2rem' }}>
                                 <div className="input-group-premium">
-                                    <label>TÊN PHÒNG</label>
+                                    <label>TÊN VÕ ĐƯỜNG</label>
                                     <input
                                         type="text"
                                         value={newRoomConfig.name}
                                         onChange={e => setNewRoomConfig({ ...newRoomConfig, name: e.target.value })}
                                         placeholder="Đặt tên cho võ đường..."
+                                        style={{ width: '100%', padding: '0.8rem', background: 'rgba(0,0,0,0.3)', border: '1px solid #444', color: '#fff' }}
                                     />
                                 </div>
 
-                                <div className="input-group-premium">
+                                <div className="input-group-premium" style={{ marginTop: '1.5rem', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
                                     <label>CHỌN BÀI HỌC (LESSON)</label>
-                                    <div className="sublevel-list" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                                    <div className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', border: '1px solid #444', borderRadius: '8px', padding: '0.5rem' }}>
                                         {/* Dynamic Lessons based on Stage */}
-                                        {STAGE_CONTENT[newRoomConfig.stage || 1].lessons?.map((lesson) => (
+                                        {(STAGE_CONTENT[newRoomConfig.stage] || STAGE_CONTENT[1]).lessons?.map((lesson) => (
                                             <div
                                                 key={lesson.id}
-                                                className={`sublevel-item ${newRoomConfig.topic === lesson.title ? 'selected' : ''}`}
-                                                onClick={() => setNewRoomConfig({ ...newRoomConfig, topic: lesson.title })}
+                                                className={`lesson-item ${newRoomConfig.topic === lesson.title ? 'selected' : ''}`}
+                                                style={{
+                                                    padding: '10px',
+                                                    margin: '5px 0',
+                                                    background: newRoomConfig.topic === lesson.title ? 'rgba(255, 215, 0, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                                                    border: newRoomConfig.topic === lesson.title ? '1px solid gold' : '1px solid transparent',
+                                                    borderRadius: '4px',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    justifyContent: 'space-between',
+                                                    alignItems: 'center'
+                                                }}
+                                                onClick={() => setNewRoomConfig({
+                                                    ...newRoomConfig,
+                                                    topic: lesson.title,
+                                                    // Auto-fill name if empty
+                                                    name: newRoomConfig.name || `Võ Đường: ${lesson.topic}`
+                                                })}
                                             >
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                                                    <span>{lesson.title}</span>
-                                                    <span style={{ fontSize: '0.8em', color: '#888' }}>Topic: {lesson.topic}</span>
+                                                <div>
+                                                    <div style={{ fontWeight: 'bold', color: newRoomConfig.topic === lesson.title ? 'gold' : '#eee' }}>{lesson.title}</div>
+                                                    <div style={{ fontSize: '0.8em', color: '#888' }}>Chủ đề: {lesson.topic}</div>
                                                 </div>
                                                 {newRoomConfig.topic === lesson.title && <i className="fa-solid fa-check gold-text"></i>}
                                             </div>

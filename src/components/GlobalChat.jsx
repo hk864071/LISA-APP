@@ -192,24 +192,28 @@ function GlobalChat({ roomId = null, title = null }) {
                                 </div>
                             )}
 
-                            {messages.map((msg) => (
-                                <motion.div
-                                    key={msg.id}
-                                    className={`chat-row ${msg.sender === senderName ? 'me' : 'them'}`}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                >
-                                    {msg.sender !== senderName && (
-                                        <div className="avatar-circle">
-                                            {msg.sender[0]?.toUpperCase()}
+                            {messages.map((msg) => {
+                                const isSystem = msg.sender === 'HỆ THỐNG';
+                                return (
+                                    <motion.div
+                                        key={msg.id}
+                                        className={`chat-row ${isSystem ? 'system' : (msg.sender === senderName ? 'me' : 'them')}`}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                    >
+                                        {!isSystem && msg.sender !== senderName && (
+                                            <div className="avatar-circle">
+                                                {msg.sender[0]?.toUpperCase()}
+                                            </div>
+                                        )}
+                                        <div className={`chat-bubble ${isSystem ? 'system-announcement' : ''}`}>
+                                            {!isSystem && msg.sender !== senderName && <div className="sender-label">{msg.sender}</div>}
+                                            {isSystem && <div style={{ fontSize: '1.2rem', marginBottom: '4px' }}>📢</div>}
+                                            <div className="message-text">{msg.message}</div>
                                         </div>
-                                    )}
-                                    <div className="chat-bubble">
-                                        {msg.sender !== senderName && <div className="sender-label">{msg.sender}</div>}
-                                        <div className="message-text">{msg.message}</div>
-                                    </div>
-                                </motion.div>
-                            ))}
+                                    </motion.div>
+                                );
+                            })}
                         </div>
 
                         {/* WARNING MSG DISPLAY */}

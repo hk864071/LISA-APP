@@ -16,25 +16,34 @@ function LevelUpModal({ oldLevel, newLevel, character, onClose, isEvolution }) {
     }, []);
 
     // --- RENDER: EVOLUTION ---
+    // --- RENDER: EVOLUTION ---
     if (isStageUp) {
+        // Determine rank color
+        let rankColor = '#4dff88'; // Green (default/early)
+        if (newLevel >= 60) rankColor = '#b14dff'; // Purple
+        if (newLevel >= 90) rankColor = '#ffd700'; // Gold
+
         return (
             <div className="levelup-overlay" onClick={onClose} style={{ flexDirection: 'column' }}>
                 <div className="evolution-container">
-                    {/* Shockwave Effect */}
+                    {/* Shockwave & Thunder */}
                     <div className="shockwave"></div>
                     <div className="thunder-strike"></div>
+
+                    {/* Mystical Aura */}
+                    <div className="aura-ring" style={{ borderColor: rankColor, boxShadow: `0 0 50px ${rankColor}33` }}></div>
 
                     {/* Character Transition */}
                     <div className="old-char-container" style={{ position: 'relative' }}>
                         <img
                             src={encodeURI(oldCharImage)}
                             alt="Old Form"
-                            className="old-char" // Animated to fade out 
+                            className="old-char"
                         />
                         <img
                             src={encodeURI(newCharImage)}
                             alt="New Form"
-                            className="new-char" // Animated to pop in dramatically
+                            className="new-char"
                         />
                     </div>
                 </div>
@@ -44,10 +53,21 @@ function LevelUpModal({ oldLevel, newLevel, character, onClose, isEvolution }) {
                         ĐỘT PHÁ CẢNH GIỚI
                     </div>
                     <div className="rank-text">
-                        Thăng cấp lên {getRankTitle(newLevel)}
+                        Thăng cấp lên <span className="rank-highlight" style={{ color: rankColor, textShadow: `0 0 20px ${rankColor}` }}>{getRankTitle(newLevel)}</span>
                     </div>
-                    <button className="wuxia-btn-premium" style={{ marginTop: '2rem', animation: 'fadeIn 2s 3s forwards', opacity: 0 }}>
-                        TIẾP TỤC HÀNH TRÌNH
+                    <button className="wuxia-btn-premium" style={{
+                        marginTop: '3rem',
+                        animation: 'fadeIn 2s 3s forwards',
+                        opacity: 0,
+                        fontSize: '1rem',
+                        fontWeight: 'bold',
+                        padding: '0.8rem 2rem', // Plumper look (more vertical padding)
+                        width: 'auto',
+                        minWidth: '0',
+                        letterSpacing: '0.5px',
+                        borderRadius: '50px' // Pill shape for extra plumpness
+                    }}>
+                        Tiếp tục hành trình
                     </button>
                 </div>
             </div>

@@ -11,7 +11,12 @@ export const getRankTitle = (level) => {
     if (level <= 30) return "Sơ Nhập";
     if (level <= 60) return "Cao Thủ";
     if (level <= 100) return "Đại Sư";
-    return "Huyền Thoại"; // Star
+    return `Huyền Thoại ★${level - 100}`; // Star
+};
+
+export const getDisplayLevel = (level) => {
+    if (level <= 100) return `Lv. ${level}`;
+    return `★ ${level - 100}`;
 };
 
 export const getEvolutionIndex = (level) => {
